@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+
+{% block title %}بورس اینسایت — سامانه هوشمند اطلاعات بورس ایران{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="bi-hero">
+    <div class="container text-center">
+        <h1 class="bi-hero-title">
+            <i class="fas fa-chart-line me-2"></i>بورس اینسایت
+        </h1>
+        <p class="bi-hero-subtitle">جستجوی لحظه‌ای گزارشات مالی شرکت‌ها از Codal.ir</p>
+
+        <!-- Search Form -->
+        <form action="/search/" method="GET" class="bi-search-box" id="heroSearchForm">
+            <div class="position-relative">
+                <input
+                    type="text"
+                    name="q"
+                    id="heroSearchInput"
+                    class="bi-search-input"
+                    placeholder="نماد یا نام شرکت را جستجو کنید... (مثال: فولاد، وبملت)"
+                    autocomplete="off"
+                    autofocus
+                >
+                <button type="submit" class="bi-search-btn">
+                    <i class="fas fa-search"></i>
+                </button>
+                <!-- Autocomplete Dropdown -->
+                <div id="autocompleteDropdown" class="bi-autocomplete" style="display:none;"></div>
+            </div>
+        </form>
+        <p class="mt-2" style="color:#555b70;font-size:0.8rem;">جستجو مستقیماً از Codal.ir — نیازی به ثبت‌نام نیست</p>
+    </div>
+</section>
+
+<!-- Stats Row -->
+<section class="bi-section">
+    <div class="container">
+        <div class="row g-3 text-center">
+            <div class="col-4">
+                <div class="bi-stat-card">
+                    <div class="bi-stat-number neon-green">{{ total_companies }}</div>
+                    <div class="bi-stat-label">شرکت</div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="bi-stat-card">
+                    <div class="bi-stat-number neon-cyan">{{ total_sectors }}</div>
+                    <div class="bi-stat-label">صنعت</div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="bi-stat-card">
+                    <div class="bi-stat-number neon-purple">{{ total_reports }}</div>
+                    <div class="bi-stat-label">گزارش</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Sectors Grid -->
+{% if sectors %}
+<section class="bi-section">
+    <div class="container">
+        <h2 class="bi-section-title">
+            <i class="fas fa-th-large me-2"></i>صنایع بورس
+        </h2>
+        <div class="row g-3">
+            {% for sector in sectors %}
+            <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                <a href="/sectors/{{ sector.code }}/" class="bi-sector-card">
+                    <span class="bi-sector-name">{{ sector.name }}</span>
+                    <span class="bi-sector-count">{{ sector.cc }} شرکت</span>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Top Companies -->
+{% if top_companies %}
+<section class="bi-section">
+    <div class="container">
+        <h2 class="bi-section-title">
+            <i class="fas fa-building me-2"></i>شرکت‌ها
+            <a href="/companies/" class="bi-see-all">مشاهده همه <i class="fas fa-arrow-left ms-1"></i></a>
+        </h2>
+        <div class="row g-3">
+            {% for company in top_companies %}
+            <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                <a href="/companies/{{ company.symbol }}/" class="bi-company-card">
+                    <div class="bi-company-symbol">{{ company.symbol }}</div>
+                    <div class="bi-company-name">{{ company.name|truncatechars:25 }}</div>
+                    <div class="bi-company-sector">{{ company.sector.name|default:"—" }}</div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- API Info -->
+<section class="bi-section">
+    <div class="container">
+        <div class="bi-info-card">
+            <h3><i class="fas fa-code me-2" style="color:#00ff88;"></i>API در دسترس است</h3>
+            <p style="color:#8892a4;margin-bottom:0;">
+                برای دریافت داده‌ها به صورت JSON از API استفاده کنید:
+            </p>
+            <code class="bi-code-block">
+                GET /api/v1/search-codal/?q=فولاد<br>
+                GET /api/v1/search-codal/&lt;symbol&gt;/all/<br>
+                GET /api/v1/autocomplete/?term=فولاد<br>
+                GET /api/v1/sectors/
+            </code>
+        </div>
+    </div>
+</section>
+
+<script>
+// Autocomplete
+(function() {
+    const input = document.getElementById('heroSearchInput');
+    const dropdown = document.getElementById('autocompleteDropdown');
+    let debounceTimer;
+
+    if (!input || !dropdown) return;
+
+    input.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        const q = this.value.trim();
+        if (q.length < 1) { dropdown.style.display = 'none'; return; }
+        debounceTimer = setTimeout(() => {
+            fetch('/api/autocomplete/?term=' + encodeURIComponent(q))
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.results || data.results.length === 0) {
+                        dropdown.style.display = 'none';
+                        return;
+                    }
+                    dropdown.innerHTML = data.results.map(c => 
+                        `<div class="bi-ac-item" data-symbol="${c.symbol}">
+                            <strong>${c.symbol}</strong>
+                            <span class="bi-ac-sep">|</span>
+                            <span>${c.name}</span>
+                            ${c.sector ? `<span class="bi-ac-sep">|</span><span class="bi-ac-sector">${c.sector}</span>` : ''}
+                        </div>`
+                    ).join('');
+                    dropdown.style.display = 'block';
+                })
+                .catch(() => { dropdown.style.display = 'none'; });
+        }, 200);
+    });
+
+    dropdown.addEventListener('click', function(e) {
+        const item = e.target.closest('.bi-ac-item');
+        if (item) {
+            input.value = item.dataset.symbol;
+            dropdown.style.display = 'none';
+            document.getElementById('heroSearchForm').submit();
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#heroSearchForm')) {
+            dropdown.style.display = 'none';
+        }
+    });
+
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            dropdown.style.display = 'none';
+        }
+    });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block title %}گزارشات بورس — بورس اینسایت{% endblock %}
+
+{% block content %}
+<section class="bi-section">
+    <div class="container">
+        <h2 class="bi-section-title mb-3">
+            <i class="fas fa-file-alt me-2"></i>گزارشات بورس
+            <span style="font-size:0.8rem;color:#666b80;">زنده از Codal.ir</span>
+        </h2>
+
+        <!-- Search -->
+        <form action="/reports/" method="GET" class="d-flex gap-2 mb-4">
+            <input type="text" name="q" value="{{ q }}" class="bi-search-input" placeholder="نماد یا نام شرکت... (مثال: فولاد)" style="flex:1;">
+            <button type="submit" class="bi-btn-primary">
+                <i class="fas fa-search me-1"></i>جستجو
+            </button>
+            {% if q %}
+            <a href="/reports/?q={{ q }}&refresh=1" class="bi-btn-outline" style="color:#ff6b6b;border-color:#ff6b6b;">
+                <i class="fas fa-sync-alt"></i>
+            </a>
+            {% endif %}
+        </form>
+
+        {% if not q %}
+        <div class="bi-empty-state">
+            <i class="fas fa-file-alt fa-3x mb-3" style="color:#2a2f42;"></i>
+            <h4>جستجوی گزارشات</h4>
+            <p style="color:#666b80;">نام یا نماد شرکت مورد نظر خود را وارد کنید تا گزارشات آن از Codal.ir دریافت شود.</p>
+            <div class="mt-3" style="color:#555;font-size:0.9rem;">
+                <p class="mb-1"><strong>نمونه‌ها:</strong></p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="/reports/?q=فولاد" class="bi-chip">فولاد</a>
+                    <a href="/reports/?q=شبندر" class="bi-chip">شبندر</a>
+                    <a href="/reports/?q=وبملت" class="bi-chip">وبملت</a>
+                    <a href="/reports/?q=خودرو" class="bi-chip">خودرو</a>
+                    <a href="/reports/?q=دارو" class="bi-chip">دارو</a>
+                </div>
+            </div>
+        </div>
+
+        {% elif error %}
+        <div class="bi-alert bi-alert-danger">
+            <i class="fas fa-exclamation-triangle me-2" style="color:#ff6b6b;"></i>
+            خطا: {{ error }}
+            <br><small style="color:#888;">این خطا معمولاً به دلیل فیلترینگ Codal.ir از خارج از ایران است.</small>
+        </div>
+
+        {% elif codal_result and codal_result.letters %}
+        <p class="mb-3" style="color:#8892a4;font-size:0.85rem;">
+            {% if codal_result.cached %}
+                <span style="color:#ffd700;"><i class="fas fa-database me-1"></i>کش شده</span>
+            {% else %}
+                <span style="color:#00ff88;"><i class="fas fa-bolt me-1"></i>زنده</span>
+            {% endif %}
+            — {{ codal_result.total }} گزارش
+            {% if codal_result.fetch_time_ms %}— {{ codal_result.fetch_time_ms }}ms{% endif %}
+        </p>
+
+        <div class="bi-results-list">
+            {% for letter in codal_result.letters %}
+            <div class="bi-report-card">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div style="flex:1;min-width:0;">
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                            <span class="bi-badge">{{ letter.report_type }}</span>
+                            {% if letter.is_audited %}
+                            <span class="bi-badge bi-badge-audited">حسابرسی شده</span>
+                            {% endif %}
+                        </div>
+                        <a href="{{ letter.url }}" target="_blank" class="bi-report-title">
+                            {{ letter.title|default:"بدون عنوان" }}
+                        </a>
+                        <div class="d-flex align-items-center gap-3 mt-1 flex-wrap" style="font-size:0.8rem;color:#666b80;">
+                            <span><i class="fas fa-tag me-1"></i>{{ letter.symbol }}</span>
+                            <span><i class="fas fa-building me-1"></i>{{ letter.company_name }}</span>
+                            <span><i class="fas fa-calendar me-1"></i>{{ letter.date_persian }}</span>
+                            <span><i class="fas fa-clock me-1"></i>{{ letter.period_type }}</span>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 flex-shrink-0">
+                        {% if letter.excel_url %}
+                        <a href="{{ letter.excel_url }}" target="_blank" class="bi-icon-btn" title="اکسل">
+                            <i class="fas fa-file-excel" style="color:#00ff88;"></i>
+                        </a>
+                        {% endif %}
+                        <a href="{{ letter.url }}" target="_blank" class="bi-icon-btn" title="مشاهده">
+                            <i class="fas fa-external-link-alt"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if codal_result.pages > 1 %}
+        <nav class="mt-4 d-flex justify-content-center align-items-center gap-2">
+            {% if page > 1 %}
+            <a href="?q={{ q }}&page={{ page|add:"-1" }}" class="bi-page-link"><i class="fas fa-chevron-right"></i></a>
+            {% endif %}
+            <span style="color:#8892a4;font-size:0.85rem;">
+                صفحه <strong style="color:#fff;">{{ page }}</strong> از <strong style="color:#fff;">{{ codal_result.pages }}</strong>
+            </span>
+            {% if page < codal_result.pages %}
+            <a href="?q={{ q }}&page={{ page|add:"1" }}" class="bi-page-link"><i class="fas fa-chevron-left"></i></a>
+            {% endif %}
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="bi-empty-state">
+            <i class="fas fa-search fa-3x mb-3" style="color:#2a2f42;"></i>
+            <h4>نتیجه‌ای یافت نشد</h4>
+            <p style="color:#666b80;">برای «{{ q }}» گزارشی یافت نشد.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

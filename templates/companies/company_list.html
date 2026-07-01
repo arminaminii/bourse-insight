@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}لیست شرکت‌ها — بورس اینسایت{% endblock %}
+
+{% block content %}
+<section class="bi-section">
+    <div class="container">
+        <h2 class="bi-section-title">
+            <i class="fas fa-building me-2"></i>لیست شرکت‌ها
+            <span style="font-size:0.85rem;color:#666b80;">({{ page_obj.paginator.count }} شرکت)</span>
+        </h2>
+
+        <!-- Filters -->
+        <div class="bi-filter-bar mb-4">
+            <form method="GET" class="d-flex gap-2 flex-wrap align-items-end">
+                <div style="flex:1;min-width:200px;">
+                    <label style="font-size:0.8rem;color:#8892a4;">جستجو</label>
+                    <input type="text" name="q" value="{{ q }}" class="bi-filter-input" placeholder="نام یا نماد...">
+                </div>
+                <div style="min-width:180px;">
+                    <label style="font-size:0.8rem;color:#8892a4;">صنعت</label>
+                    <select name="sector" class="bi-filter-input">
+                        <option value="">همه صنایع</option>
+                        {% for s in sectors %}
+                        <option value="{{ s.code }}" {% if sector == s.code %}selected{% endif %}>{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="min-width:140px;">
+                    <label style="font-size:0.8rem;color:#8892a4;">نوع بازار</label>
+                    <select name="company_type" class="bi-filter-input">
+                        <option value="">همه</option>
+                        {% for ct_val, ct_label in company_types %}
+                        <option value="{{ ct_val }}" {% if company_type == ct_val %}selected{% endif %}>{{ ct_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="bi-btn-primary">
+                    <i class="fas fa-filter me-1"></i>فیلتر
+                </button>
+                <a href="/companies/" class="bi-btn-outline" style="height:42px;display:flex;align-items:center;">
+                    <i class="fas fa-times"></i>
+                </a>
+            </form>
+        </div>
+
+        <!-- Company Grid -->
+        {% if companies %}
+        <div class="row g-3">
+            {% for company in companies %}
+            <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                <a href="/companies/{{ company.symbol }}/" class="bi-company-card">
+                    <div class="bi-company-symbol">{{ company.symbol }}</div>
+                    <div class="bi-company-name">{{ company.name|truncatechars:22 }}</div>
+                    <div class="bi-company-sector">{{ company.sector.name|default:"—" }}</div>
+                    <div class="bi-company-type">{{ company.get_company_type_display }}</div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <nav class="mt-4 d-flex justify-content-center">
+            <ul class="bi-pagination">
+                {% if page_obj.has_previous %}
+                <li><a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&sector={{ sector }}&company_type={{ company_type }}" class="bi-page-link"><i class="fas fa-chevron-right"></i></a></li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li><span class="bi-page-link active">{{ num }}</span></li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li><a href="?page={{ num }}&q={{ q }}&sector={{ sector }}&company_type={{ company_type }}" class="bi-page-link">{{ num }}</a></li>
+                {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li><a href="?page={{ page_obj.next_page_number }}&q={{ q }}&sector={{ sector }}&company_type={{ company_type }}" class="bi-page-link"><i class="fas fa-chevron-left"></i></a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="bi-empty-state">
+            <i class="fas fa-building fa-3x mb-3" style="color:#2a2f42;"></i>
+            <h4>شرکتی یافت نشد</h4>
+            <p style="color:#666b80;">فیلترهای خود را تغییر دهید.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

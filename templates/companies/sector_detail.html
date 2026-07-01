@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ sector.name }} — بورس اینسایت{% endblock %}
+
+{% block content %}
+<section class="bi-section">
+    <div class="container">
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb" style="font-size:0.85rem;">
+                <li class="breadcrumb-item"><a href="/" style="color:#00ff88;">خانه</a></li>
+                <li class="breadcrumb-item"><a href="/companies/" style="color:#00ff88;">شرکت‌ها</a></li>
+                <li class="breadcrumb-item active" style="color:#8892a4;">{{ sector.name }}</li>
+            </ol>
+        </nav>
+
+        <h2 class="bi-section-title mb-3">
+            <i class="fas fa-industry me-2"></i>{{ sector.name }}
+            <span style="font-size:0.85rem;color:#666b80;">{{ company_count }} شرکت</span>
+        </h2>
+
+        {% if companies %}
+        <div class="row g-3">
+            {% for company in companies %}
+            <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                <a href="/companies/{{ company.symbol }}/" class="bi-company-card">
+                    <div class="bi-company-symbol">{{ company.symbol }}</div>
+                    <div class="bi-company-name">{{ company.name|truncatechars:22 }}</div>
+                    <div class="bi-company-type">{{ company.get_company_type_display }}</div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bi-empty-state">
+            <i class="fas fa-industry fa-3x mb-3" style="color:#2a2f42;"></i>
+            <h4>شرکتی در این صنعت ثبت نشده</h4>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

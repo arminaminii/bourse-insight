@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ company.symbol }} — {{ company.name }} — بورس اینسایت{% endblock %}
+
+{% block content %}
+<section class="bi-section">
+    <div class="container">
+        <!-- Company Header -->
+        <div class="bi-company-header">
+            <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+                <div>
+                    <h2 class="bi-company-hero-symbol">{{ company.symbol }}</h2>
+                    <h5 class="mb-2">{{ company.name }}</h5>
+                    <div class="d-flex gap-3 flex-wrap" style="font-size:0.85rem;color:#8892a4;">
+                        {% if company.sector %}
+                        <a href="/sectors/{{ company.sector.code }}/" class="bi-sector-link">
+                            <i class="fas fa-industry me-1"></i>{{ company.sector.name }}
+                        </a>
+                        {% endif %}
+                        <span><i class="fas fa-store me-1"></i>{{ company.get_company_type_display }}</span>
+                        {% if company.isin %}
+                        <span><i class="fas fa-fingerprint me-1"></i>{{ company.isin }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="https://codal.ir/ReportList.aspx?search&Symbol={{ company.symbol }}" target="_blank" class="bi-btn-outline">
+                        <i class="fas fa-external-link-alt me-1"></i>کدال
+                    </a>
+                    <a href="/search/?q={{ company.symbol }}" class="bi-btn-primary">
+                        <i class="fas fa-search me-1"></i>جستجوی کدال
+                    </a>
+                    <a href="?refresh=1" class="bi-btn-outline" style="color:#ff6b6b;border-color:#ff6b6b;" title="بروزرسانی اجباری">
+                        <i class="fas fa-sync-alt"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="row g-3 mb-4">
+            <div class="col-4">
+                <div class="bi-stat-card">
+                    <div class="bi-stat-number neon-green">{{ total_reports }}</div>
+                    <div class="bi-stat-label">گزارش</div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="bi-stat-card">
+                    <div class="bi-stat-number neon-cyan">
+                        {% if codal_result.fetch_time_ms %}{{ codal_result.fetch_time_ms }}ms{% else %}—{% endif %}
+                    </div>
+                    <div class="bi-stat-label">زمان دریافت</div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="bi-stat-card">
+                    <div class="bi-stat-number neon-purple">
+                        {% if codal_result.cached %}کش{% else %}زنده{% endif %}
+                    </div>
+                    <div class="bi-stat-label">نوع داده</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error -->
+        {% if codal_result.error %}
+        <div class="bi-alert bi-alert-danger mb-4">
+            <i class="fas fa-exclamation-triangle me-2" style="color:#ff6b6b;"></i>
+            {{ codal_result.error }}
+            <br><small style="color:#888;">این خطا معمولاً به دلیل فیلترینگ Codal.ir از خارج از ایران است.</small>
+        </div>
+        {% endif %}
+
+        <!-- Reports List -->
+        {% if reports %}
+        <h5 class="mb-3">
+            <i class="fas fa-file-alt me-2" style="color:#00ff88;"></i>
+            گزارشات Codal.ir
+            <span style="font-size:0.8rem;color:#666;">({{ reports|length }} از {{ total_reports }})</span>
+        </h5>
+        <div class="bi-results-list">
+            {% for letter in reports %}
+            <div class="bi-report-card">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div style="flex:1;min-width:0;">
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                            <span class="bi-badge">{{ letter.report_type }}</span>
+                            {% if letter.is_audited %}
+                            <span class="bi-badge bi-badge-audited">حسابرسی شده</span>
+                            {% endif %}
+                            {% if letter.is_consolidated %}
+                            <span class="bi-badge bi-badge-consolidated">تلفیقی</span>
+                            {% endif %}
+                        </div>
+                        <a href="{{ letter.url }}" target="_blank" class="bi-report-title">
+                            {{ letter.title|default:"بدون عنوان" }}
+                        </a>
+                        <div class="d-flex align-items-center gap-3 mt-1 flex-wrap" style="font-size:0.8rem;color:#666b80;">
+                            <span><i class="fas fa-calendar me-1"></i>{{ letter.date_persian }}</span>
+                            <span><i class="fas fa-clock me-1"></i>{{ letter.period_type }}</span>
+                            {% if letter.fiscal_year %}
+                            <span><i class="fas fa-calendar-alt me-1"></i>{{ letter.fiscal_year }}</span>
+                            {% endif %}
+                            {% if letter.auditor %}
+                            <span><i class="fas fa-user-check me-1"></i>{{ letter.auditor }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 flex-shrink-0">
+                        {% if letter.excel_url %}
+                        <a href="{{ letter.excel_url }}" target="_blank" class="bi-icon-btn" title="دانلود اکسل">
+                            <i class="fas fa-file-excel" style="color:#00ff88;"></i>
+                        </a>
+                        {% endif %}
+                        <a href="{{ letter.url }}" target="_blank" class="bi-icon-btn" title="مشاهده">
+                            <i class="fas fa-external-link-alt"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if reports_page.has_other_pages %}
+        <nav class="mt-4 d-flex justify-content-center">
+            <ul class="bi-pagination">
+                {% if reports_page.has_previous %}
+                <li><a href="?page={{ reports_page.previous_page_number }}" class="bi-page-link"><i class="fas fa-chevron-right"></i></a></li>
+                {% endif %}
+                {% for num in reports_page.paginator.page_range %}
+                {% if reports_page.number == num %}
+                <li><span class="bi-page-link active">{{ num }}</span></li>
+                {% elif num > reports_page.number|add:'-3' and num < reports_page.number|add:'3' %}
+                <li><a href="?page={{ num }}" class="bi-page-link">{{ num }}</a></li>
+                {% endif %}
+                {% endfor %}
+                {% if reports_page.has_next %}
+                <li><a href="?page={{ reports_page.next_page_number }}" class="bi-page-link"><i class="fas fa-chevron-left"></i></a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% elif not codal_result.error %}
+        <div class="bi-empty-state">
+            <i class="fas fa-file-alt fa-3x mb-3" style="color:#2a2f42;"></i>
+            <h4>گزارشی یافت نشد</h4>
+            <p style="color:#666b80;">برای این شرکت گزارشی در Codal.ir موجود نیست.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
